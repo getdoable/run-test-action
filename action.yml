@@ -1,0 +1,64 @@
+name: 'DoableAI Trigger Run'
+description: 'Trigger DoableAI scheduled/group regression runs from GitHub Actions.'
+author: 'DoableAI'
+
+branding:
+  icon: 'play'
+  color: 'blue'
+
+inputs:
+  trigger-api-url:
+    description: 'DoableAI trigger API URL.'
+    required: false
+    default: 'https://api.doableai.com/api/integrations/github/trigger-run'
+  trigger-token:
+    description: 'Bearer token from DoableAI Settings -> API Keys.'
+    required: true
+  idempotency-key:
+    description: 'Optional idempotency key. If omitted, action generates one from GitHub context.'
+    required: false
+  group-id:
+    description: 'Regression group UUID to trigger. Exactly one of group-id / schedule-id is required.'
+    required: false
+  schedule-id:
+    description: 'Schedule UUID to trigger. Exactly one of group-id / schedule-id is required.'
+    required: false
+  repository-full-name:
+    description: 'Repository full name (owner/repo).'
+    required: false
+  workflow-name:
+    description: 'Workflow display name.'
+    required: false
+  branch:
+    description: 'Branch name.'
+    required: false
+  head-sha:
+    description: 'Commit SHA.'
+    required: false
+  github-run-id:
+    description: 'GitHub run id.'
+    required: false
+  github-run-attempt:
+    description: 'GitHub run attempt.'
+    required: false
+  conclusion:
+    description: 'Optional CI conclusion metadata.'
+    required: false
+
+outputs:
+  status:
+    description: 'API status: created_execution or duplicate.'
+  execution-id:
+    description: 'DoableAI execution UUID.'
+  execution-public-id:
+    description: 'DoableAI execution public id.'
+  http-status:
+    description: 'HTTP status code returned by trigger API.'
+  idempotency-key:
+    description: 'Final idempotency key used by the request.'
+  response-body:
+    description: 'Raw API response body.'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
