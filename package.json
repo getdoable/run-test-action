@@ -1,5 +1,5 @@
 {
-  "name": "doableai-trigger-run-action",
+  "name": "doableai-run-test-action",
   "version": "1.0.0",
   "private": true,
   "description": "GitHub Action wrapper for DoableAI trigger-run API",

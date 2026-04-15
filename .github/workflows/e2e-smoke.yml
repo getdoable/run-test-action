@@ -1,0 +1,77 @@
+name: E2E Smoke Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      group_id:
+        description: Optional override for target regression group id.
+        required: false
+        type: string
+      schedule_id:
+        description: Optional override for target schedule id (use only one of group/schedule).
+        required: false
+        type: string
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      DOABLEAI_TRIGGER_API_URL: ${{ secrets.DOABLEAI_TRIGGER_API_URL }}
+      DOABLEAI_TRIGGER_TOKEN: ${{ secrets.DOABLEAI_TRIGGER_TOKEN }}
+      DOABLEAI_GROUP_ID: ${{ github.event.inputs.group_id || secrets.DOABLEAI_GROUP_ID }}
+      DOABLEAI_SCHEDULE_ID: ${{ github.event.inputs.schedule_id || secrets.DOABLEAI_SCHEDULE_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate required secrets/inputs
+        shell: bash
+        run: |
+          if [[ -z "${DOABLEAI_TRIGGER_API_URL}" ]]; then
+            echo "Missing secret: DOABLEAI_TRIGGER_API_URL" >&2
+            exit 1
+          fi
+          if [[ -z "${DOABLEAI_TRIGGER_TOKEN}" ]]; then
+            echo "Missing secret: DOABLEAI_TRIGGER_TOKEN" >&2
+            exit 1
+          fi
+          if [[ -z "${DOABLEAI_GROUP_ID}" && -z "${DOABLEAI_SCHEDULE_ID}" ]]; then
+            echo "Provide DOABLEAI_GROUP_ID or DOABLEAI_SCHEDULE_ID (secret or workflow input)." >&2
+            exit 1
+          fi
+          if [[ -n "${DOABLEAI_GROUP_ID}" && -n "${DOABLEAI_SCHEDULE_ID}" ]]; then
+            echo "Only one target is allowed: group or schedule." >&2
+            exit 1
+          fi
+
+      - name: Trigger DoableAI run
+        id: trigger
+        uses: ./
+        with:
+          trigger-api-url: ${{ env.DOABLEAI_TRIGGER_API_URL }}
+          trigger-token: ${{ env.DOABLEAI_TRIGGER_TOKEN }}
+          group-id: ${{ env.DOABLEAI_GROUP_ID }}
+          schedule-id: ${{ env.DOABLEAI_SCHEDULE_ID }}
+          idempotency-key: ${{ github.repository }}:${{ github.run_id }}:${{ github.run_attempt }}:smoke
+
+      - name: Publish smoke summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## DoableAI Trigger Smoke Result"
+            echo ""
+            echo "- Workflow run: \`${GITHUB_RUN_ID}\`"
+            echo "- HTTP status: \`${{ steps.trigger.outputs.http-status }}\`"
+            echo "- Action status: \`${{ steps.trigger.outputs.status }}\`"
+            echo "- Execution ID: \`${{ steps.trigger.outputs.execution-id }}\`"
+            echo "- Execution Public ID: \`${{ steps.trigger.outputs.execution-public-id }}\`"
+            echo "- Idempotency Key: \`${{ steps.trigger.outputs.idempotency-key }}\`"
+            echo ""
+            echo "### Raw Response"
+            echo '```json'
+            echo '${{ steps.trigger.outputs.response-body }}'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

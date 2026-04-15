@@ -1,4 +1,4 @@
-# `doableai/trigger-run-action`
+# `getdoable/run-test-action`
 
 Trigger DoableAI regression runs from GitHub Actions.
 
@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger DoableAI group run
-        uses: doableai/trigger-run-action@v1
+        uses: getdoable/run-test-action@v1
         with:
           trigger-api-url: https://api.doableai.com/api/integrations/github/trigger-run
           trigger-token: ${{ secrets.DOABLEAI_TRIGGER_TOKEN }}
@@ -69,9 +69,27 @@ This lets CI safely retry without creating duplicate runs.
 
 ```yaml
 - name: Trigger DoableAI schedule run
-  uses: doableai/trigger-run-action@v1
+  uses: getdoable/run-test-action@v1
   with:
     trigger-token: ${{ secrets.DOABLEAI_TRIGGER_TOKEN }}
     schedule-id: 6bdf3cc8-9f96-4eef-bf7a-8f1d7e0ad67a
     idempotency-key: ${{ github.repository }}:${{ github.run_id }}:${{ github.run_attempt }}:nightly
 ```
+
+## Smoke Workflow In This Repo
+
+This repository includes `.github/workflows/e2e-smoke.yml` for end-to-end verification in GitHub Actions.
+
+Configure these repository secrets before running it:
+
+- `DOABLEAI_TRIGGER_API_URL`
+- `DOABLEAI_TRIGGER_TOKEN`
+- one of:
+  - `DOABLEAI_GROUP_ID`
+  - `DOABLEAI_SCHEDULE_ID`
+
+After each smoke run, check:
+
+- job result (success/failure)
+- step outputs
+- `GITHUB_STEP_SUMMARY` (human-readable test result)
