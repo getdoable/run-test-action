@@ -26,9 +26,6 @@ jobs:
       DOABLEAI_GROUP_ID: ${{ github.event.inputs.group_id || secrets.DOABLEAI_GROUP_ID }}
       DOABLEAI_SCHEDULE_ID: ${{ github.event.inputs.schedule_id || secrets.DOABLEAI_SCHEDULE_ID }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Validate required secrets/inputs
         shell: bash
         run: |
@@ -45,7 +42,15 @@ jobs:
             exit 1
           fi
 
-      - name: Trigger DoableAI run
+      - name: Prepare local action source
+        shell: bash
+        run: |
+          git init
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git fetch --depth=1 origin "${GITHUB_SHA}"
+          git checkout --detach "${GITHUB_SHA}"
+
+      - name: Trigger DoableAI run via action
         id: trigger
         uses: ./
         with:
