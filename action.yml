@@ -7,14 +7,6 @@ branding:
   color: 'blue'
 
 inputs:
-  trigger-api-url:
-    description: 'DoableAI trigger API URL.'
-    required: false
-    default: 'https://api.doableai.com/api/integrations/github/trigger-run'
-  execution-status-api-url:
-    description: 'DoableAI execution status API URL.'
-    required: false
-    default: 'https://api.doableai.com/api/integrations/github/execution-status'
   trigger-token:
     description: 'Bearer token from DoableAI Settings -> API Keys.'
     required: true

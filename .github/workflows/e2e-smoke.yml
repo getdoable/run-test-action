@@ -18,8 +18,6 @@ jobs:
     permissions:
       contents: read
     env:
-      DOABLEAI_TRIGGER_API_URL: ${{ secrets.DOABLEAI_TRIGGER_API_URL }}
-      DOABLEAI_EXECUTION_STATUS_API_URL: ${{ secrets.DOABLEAI_EXECUTION_STATUS_API_URL }}
       DOABLEAI_TRIGGER_TOKEN: ${{ secrets.DOABLEAI_TRIGGER_TOKEN }}
       DOABLEAI_GROUP_ID: ${{ github.event.inputs.group_id || secrets.DOABLEAI_GROUP_ID }}
       DOABLEAI_SCHEDULE_ID: ${{ github.event.inputs.schedule_id || secrets.DOABLEAI_SCHEDULE_ID }}
@@ -30,10 +28,6 @@ jobs:
       - name: Validate required secrets/inputs
         shell: bash
         run: |
-          if [[ -z "${DOABLEAI_TRIGGER_API_URL}" ]]; then
-            echo "Missing secret: DOABLEAI_TRIGGER_API_URL" >&2
-            exit 1
-          fi
           if [[ -z "${DOABLEAI_TRIGGER_TOKEN}" ]]; then
             echo "Missing secret: DOABLEAI_TRIGGER_TOKEN" >&2
             exit 1
@@ -51,8 +45,6 @@ jobs:
         id: trigger
         uses: ./
         with:
-          trigger-api-url: ${{ env.DOABLEAI_TRIGGER_API_URL }}
-          execution-status-api-url: ${{ env.DOABLEAI_EXECUTION_STATUS_API_URL }}
           trigger-token: ${{ env.DOABLEAI_TRIGGER_TOKEN }}
           group-id: ${{ env.DOABLEAI_GROUP_ID }}
           schedule-id: ${{ env.DOABLEAI_SCHEDULE_ID }}

@@ -4,6 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const node_fs_1 = __importDefault(require("node:fs"));
+const TRIGGER_API_URL = 'https://api.doableai.com/api/integrations/github/trigger-run';
+const EXECUTION_STATUS_API_URL = 'https://api.doableai.com/api/integrations/github/execution-status';
 function readInput(name, required = false) {
     const envKey = `INPUT_${name.replace(/ /g, '_').replace(/-/g, '_').toUpperCase()}`;
     const value = process.env[envKey] || '';
@@ -65,8 +67,6 @@ function buildExecutionStatusUrl(baseUrl, executionId, executionPublicId) {
     return url.toString();
 }
 async function run() {
-    const triggerApiUrl = readInput('trigger-api-url', true);
-    const executionStatusApiUrl = readInput('execution-status-api-url');
     const triggerToken = readInput('trigger-token', true);
     const waitForCompletion = parseBooleanInput(readInput('wait-for-completion'));
     const pollIntervalSeconds = parsePositiveIntegerInput(readInput('poll-interval-seconds'), 20);
@@ -110,10 +110,10 @@ async function run() {
             schedule_id: scheduleId || undefined,
         },
     };
-    console.log(`Triggering DoableAI API: ${triggerApiUrl}`);
+    console.log(`Triggering DoableAI API: ${TRIGGER_API_URL}`);
     console.log(`Target type: ${targetType}`);
     console.log(`Idempotency key: ${idempotencyKey}`);
-    const response = await fetch(triggerApiUrl, {
+    const response = await fetch(TRIGGER_API_URL, {
         method: 'POST',
         headers: {
             Authorization: `Bearer ${triggerToken}`,
@@ -151,9 +151,8 @@ async function run() {
     if (!executionId && !executionPublicId) {
         throw new Error('wait-for-completion=true requires execution_id or execution_public_id in trigger response.');
     }
-    const finalStatusApiUrl = executionStatusApiUrl || triggerApiUrl.replace(/\/trigger-run\/?$/, '/execution-status');
     const deadline = Date.now() + timeoutSeconds * 1000;
-    const pollUrl = buildExecutionStatusUrl(finalStatusApiUrl, executionId, executionPublicId);
+    const pollUrl = buildExecutionStatusUrl(EXECUTION_STATUS_API_URL, executionId, executionPublicId);
     while (true) {
         const statusResponse = await fetch(pollUrl, {
             method: 'GET',
