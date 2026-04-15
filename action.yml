@@ -11,9 +11,25 @@ inputs:
     description: 'DoableAI trigger API URL.'
     required: false
     default: 'https://api.doableai.com/api/integrations/github/trigger-run'
+  execution-status-api-url:
+    description: 'DoableAI execution status API URL.'
+    required: false
+    default: 'https://api.doableai.com/api/integrations/github/execution-status'
   trigger-token:
     description: 'Bearer token from DoableAI Settings -> API Keys.'
     required: true
+  wait-for-completion:
+    description: 'Whether to wait for terminal test result.'
+    required: false
+    default: 'false'
+  poll-interval-seconds:
+    description: 'Polling interval when waiting for completion.'
+    required: false
+    default: '20'
+  timeout-seconds:
+    description: 'Max seconds to wait for terminal status.'
+    required: false
+    default: '900'
   idempotency-key:
     description: 'Optional idempotency key. If omitted, action generates one from GitHub context.'
     required: false
@@ -58,6 +74,10 @@ outputs:
     description: 'Final idempotency key used by the request.'
   response-body:
     description: 'Raw API response body.'
+  final-status:
+    description: 'Terminal execution status when wait-for-completion=true.'
+  final-outcome:
+    description: 'Terminal execution outcome when wait-for-completion=true.'
 
 runs:
   using: 'node20'

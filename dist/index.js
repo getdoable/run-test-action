@@ -19,6 +19,22 @@ function setOutput(name, value) {
     const output = String(value ?? '');
     node_fs_1.default.appendFileSync(process.env.GITHUB_OUTPUT, `${name}<<__DOABLEAI_EOF__\n${output}\n__DOABLEAI_EOF__\n`);
 }
+function parseBooleanInput(value) {
+    const normalized = value.trim().toLowerCase();
+    return normalized === '1' || normalized === 'true' || normalized === 'yes' || normalized === 'on';
+}
+function parsePositiveIntegerInput(value, fallback) {
+    const trimmed = value.trim();
+    if (!trimmed)
+        return fallback;
+    const parsed = Number.parseInt(trimmed, 10);
+    if (Number.isNaN(parsed) || parsed <= 0)
+        return fallback;
+    return parsed;
+}
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
 function buildDefaultIdempotencyKey({ repositoryFullName, workflowName, headSha, githubRunId, githubRunAttempt, targetType, targetId, }) {
     return [
         repositoryFullName || 'unknown-repo',
@@ -38,9 +54,23 @@ function maybeJson(text) {
         return null;
     }
 }
+function buildExecutionStatusUrl(baseUrl, executionId, executionPublicId) {
+    const url = new URL(baseUrl);
+    if (executionId) {
+        url.searchParams.set('execution_id', executionId);
+    }
+    else if (executionPublicId) {
+        url.searchParams.set('execution_public_id', executionPublicId);
+    }
+    return url.toString();
+}
 async function run() {
     const triggerApiUrl = readInput('trigger-api-url', true);
+    const executionStatusApiUrl = readInput('execution-status-api-url');
     const triggerToken = readInput('trigger-token', true);
+    const waitForCompletion = parseBooleanInput(readInput('wait-for-completion'));
+    const pollIntervalSeconds = parsePositiveIntegerInput(readInput('poll-interval-seconds'), 20);
+    const timeoutSeconds = parsePositiveIntegerInput(readInput('timeout-seconds'), 900);
     const groupId = readInput('group-id');
     const scheduleId = readInput('schedule-id');
     const conclusion = readInput('conclusion');
@@ -109,9 +139,55 @@ async function run() {
     if (response.status === 200 || response.status === 409) {
         const statusText = parsed && typeof parsed.status === 'string' ? parsed.status : `http_${response.status}`;
         console.log(`DoableAI trigger accepted with status: ${statusText}`);
+    }
+    else {
+        throw new Error(`Trigger API failed with status ${response.status}: ${responseBody}`);
+    }
+    if (!waitForCompletion) {
         return;
     }
-    throw new Error(`Trigger API failed with status ${response.status}: ${responseBody}`);
+    const executionId = parsed && typeof parsed.execution_id === 'string' ? parsed.execution_id : null;
+    const executionPublicId = parsed && typeof parsed.execution_public_id === 'string' ? parsed.execution_public_id : null;
+    if (!executionId && !executionPublicId) {
+        throw new Error('wait-for-completion=true requires execution_id or execution_public_id in trigger response.');
+    }
+    const finalStatusApiUrl = executionStatusApiUrl || triggerApiUrl.replace(/\/trigger-run\/?$/, '/execution-status');
+    const deadline = Date.now() + timeoutSeconds * 1000;
+    const pollUrl = buildExecutionStatusUrl(finalStatusApiUrl, executionId, executionPublicId);
+    while (true) {
+        const statusResponse = await fetch(pollUrl, {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${triggerToken}`,
+                'Content-Type': 'application/json',
+            },
+        });
+        const statusBody = await statusResponse.text();
+        const parsedStatusBody = maybeJson(statusBody);
+        if (!statusResponse.ok) {
+            throw new Error(`Execution status API failed with status ${statusResponse.status}: ${statusBody}`);
+        }
+        if (!parsedStatusBody || parsedStatusBody.status !== 'ok') {
+            throw new Error(`Unexpected execution status payload: ${statusBody}`);
+        }
+        const execution = parsedStatusBody.execution;
+        const latestStatus = typeof execution?.status === 'string' ? execution.status : '';
+        const outcome = typeof parsedStatusBody.outcome === 'string' ? parsedStatusBody.outcome : '';
+        const isTerminal = parsedStatusBody.is_terminal === true;
+        setOutput('final-status', latestStatus);
+        setOutput('final-outcome', outcome);
+        console.log(`Execution polled: status=${latestStatus || 'unknown'}, outcome=${outcome || 'unknown'}, terminal=${isTerminal}`);
+        if (isTerminal) {
+            if (outcome === 'passed') {
+                return;
+            }
+            throw new Error(`DoableAI execution finished with outcome: ${outcome || 'unknown'}`);
+        }
+        if (Date.now() >= deadline) {
+            throw new Error(`Timed out waiting for DoableAI execution result after ${timeoutSeconds}s`);
+        }
+        await sleep(pollIntervalSeconds * 1000);
+    }
 }
 run().catch((error) => {
     const message = error instanceof Error ? error.message : String(error);

@@ -37,15 +37,20 @@ jobs:
           trigger-api-url: https://api.doableai.com/api/integrations/github/trigger-run
           trigger-token: ${{ secrets.DOABLEAI_TRIGGER_TOKEN }}
           group-id: 437062ea-6c73-46fe-9806-d766d49ec297
+          wait-for-completion: true
 ```
 
 ## Inputs
 
 - `trigger-token` (**required**): Bearer token created in DoableAI Settings -> API Keys.
 - `trigger-api-url`: Trigger API URL. Defaults to `https://api.doableai.com/api/integrations/github/trigger-run`.
+- `execution-status-api-url`: Execution status API URL. Defaults to `https://api.doableai.com/api/integrations/github/execution-status`.
 - `group-id`: Regression group UUID. Exactly one of `group-id` / `schedule-id` is required.
 - `schedule-id`: Schedule UUID. Exactly one of `group-id` / `schedule-id` is required.
 - `idempotency-key`: Optional dedupe key. If omitted, action auto-generates one from GitHub context.
+- `wait-for-completion`: `true/false`, default `false`. When `true`, action polls until terminal result.
+- `poll-interval-seconds`: Poll interval while waiting, default `20`.
+- `timeout-seconds`: Max wait time, default `900`.
 - `repository-full-name`, `workflow-name`, `branch`, `head-sha`, `github-run-id`, `github-run-attempt`, `conclusion`:
   Optional metadata overrides. Defaults are auto-populated from GitHub Actions env.
 
@@ -57,6 +62,8 @@ jobs:
 - `http-status`: HTTP status code (`200`, `409`, etc.).
 - `idempotency-key`: Final key used by this request.
 - `response-body`: Raw API response body.
+- `final-status`: Terminal execution status (`completed/failed/cancelled`) when `wait-for-completion=true`.
+- `final-outcome`: Terminal outcome (`passed/failed/cancelled`) when `wait-for-completion=true`.
 
 ## Idempotency Behavior
 
@@ -64,6 +71,21 @@ jobs:
 - Repeated request with same key: `409` + `duplicate`
 
 This lets CI safely retry without creating duplicate runs.
+
+## Wait For Final Result Example
+
+```yaml
+- name: Trigger and wait for DoableAI result
+  uses: getdoable/run-test-action@v1
+  with:
+    trigger-token: ${{ secrets.DOABLEAI_TRIGGER_TOKEN }}
+    group-id: 437062ea-6c73-46fe-9806-d766d49ec297
+    wait-for-completion: true
+    poll-interval-seconds: 20
+    timeout-seconds: 1800
+```
+
+When final outcome is not `passed`, this step fails to make CI status visible in GitHub checks.
 
 ## Schedule Example
 
@@ -83,6 +105,7 @@ This repository includes `.github/workflows/e2e-smoke.yml` for end-to-end verifi
 Configure these repository secrets before running it:
 
 - `DOABLEAI_TRIGGER_API_URL`
+- `DOABLEAI_EXECUTION_STATUS_API_URL` (optional; if omitted, action derives from trigger API URL)
 - `DOABLEAI_TRIGGER_TOKEN`
 - one of:
   - `DOABLEAI_GROUP_ID`

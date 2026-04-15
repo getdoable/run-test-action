@@ -19,6 +19,7 @@ jobs:
       contents: read
     env:
       DOABLEAI_TRIGGER_API_URL: ${{ secrets.DOABLEAI_TRIGGER_API_URL }}
+      DOABLEAI_EXECUTION_STATUS_API_URL: ${{ secrets.DOABLEAI_EXECUTION_STATUS_API_URL }}
       DOABLEAI_TRIGGER_TOKEN: ${{ secrets.DOABLEAI_TRIGGER_TOKEN }}
       DOABLEAI_GROUP_ID: ${{ github.event.inputs.group_id || secrets.DOABLEAI_GROUP_ID }}
       DOABLEAI_SCHEDULE_ID: ${{ github.event.inputs.schedule_id || secrets.DOABLEAI_SCHEDULE_ID }}
@@ -51,10 +52,14 @@ jobs:
         uses: ./
         with:
           trigger-api-url: ${{ env.DOABLEAI_TRIGGER_API_URL }}
+          execution-status-api-url: ${{ env.DOABLEAI_EXECUTION_STATUS_API_URL }}
           trigger-token: ${{ env.DOABLEAI_TRIGGER_TOKEN }}
           group-id: ${{ env.DOABLEAI_GROUP_ID }}
           schedule-id: ${{ env.DOABLEAI_SCHEDULE_ID }}
           idempotency-key: ${{ github.repository }}:${{ github.run_id }}:${{ github.run_attempt }}:smoke
+          wait-for-completion: "true"
+          poll-interval-seconds: "20"
+          timeout-seconds: "1800"
 
       - name: Publish smoke summary
         if: always()
@@ -69,6 +74,8 @@ jobs:
             echo "- Execution ID: \`${{ steps.trigger.outputs.execution-id }}\`"
             echo "- Execution Public ID: \`${{ steps.trigger.outputs.execution-public-id }}\`"
             echo "- Idempotency Key: \`${{ steps.trigger.outputs.idempotency-key }}\`"
+            echo "- Final Status: \`${{ steps.trigger.outputs.final-status }}\`"
+            echo "- Final Outcome: \`${{ steps.trigger.outputs.final-outcome }}\`"
             echo ""
             echo "### Raw Response"
             echo '```json'
