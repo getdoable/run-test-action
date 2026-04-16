@@ -80,10 +80,10 @@ When final outcome is not `passed`, this step fails to make CI status visible in
 
 This repository includes `.github/workflows/e2e-smoke.yml` for end-to-end verification in GitHub Actions.
 
-Configure these repository secrets before running it:
+Configure GitHub Actions config before running it:
 
-- `DOABLEAI_API_KEY`
-- `DOABLEAI_GROUP_PUBLIC_ID`
+- Secret: `DOABLEAI_API_KEY`
+- Repository variable: `DOABLEAI_GROUP_PUBLIC_ID`
 
 After each smoke run, check:
 

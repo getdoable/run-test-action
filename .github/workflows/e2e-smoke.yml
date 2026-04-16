@@ -2,11 +2,6 @@ name: E2E Smoke Test
 
 on:
   workflow_dispatch:
-    inputs:
-      group_public_id:
-        description: Optional override for target regression group public id.
-        required: false
-        type: string
 
 concurrency:
   group: e2e-smoke-${{ github.ref }}
@@ -19,7 +14,7 @@ jobs:
       contents: read
     env:
       DOABLEAI_API_KEY: ${{ secrets.DOABLEAI_API_KEY }}
-      DOABLEAI_GROUP_PUBLIC_ID: ${{ github.event.inputs.group_public_id || secrets.DOABLEAI_GROUP_PUBLIC_ID }}
+      DOABLEAI_GROUP_PUBLIC_ID: ${{ vars.DOABLEAI_GROUP_PUBLIC_ID }}
     steps:
       - name: Validate required secrets/inputs
         shell: bash
@@ -29,7 +24,7 @@ jobs:
             exit 1
           fi
           if [[ -z "${DOABLEAI_GROUP_PUBLIC_ID}" ]]; then
-            echo "Provide DOABLEAI_GROUP_PUBLIC_ID (secret or workflow input)." >&2
+            echo "Provide variable: DOABLEAI_GROUP_PUBLIC_ID" >&2
             exit 1
           fi
 
@@ -56,11 +51,13 @@ jobs:
         if: always()
         shell: bash
         run: |
-          {
-            echo "## DoableAI Trigger Smoke Result"
-            echo ""
-            echo "- Workflow run: \`${GITHUB_RUN_ID}\`"
-            echo "- Action status: \`${{ steps.trigger.outputs.status }}\`"
-            echo "- Outcome: \`${{ steps.trigger.outputs.outcome }}\`"
-            echo "- Outcome Link: ${{ steps.trigger.outputs.outcome-link }}"
-          } >> "$GITHUB_STEP_SUMMARY"
+          cat <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          ## DoableAI Trigger Smoke Result
+
+          | Field | Value |
+          | --- | --- |
+          | Workflow Run | `${GITHUB_RUN_ID}` |
+          | Action Status | `${{ steps.trigger.outputs.status }}` |
+          | Outcome | `${{ steps.trigger.outputs.outcome }}` |
+          | Outcome Link | [Open Result](${{ steps.trigger.outputs.outcome-link }}) |
+          EOF
