@@ -37,15 +37,14 @@ function parsePositiveIntegerInput(value, fallback) {
 function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
-function buildDefaultIdempotencyKey({ repositoryFullName, workflowName, headSha, githubRunId, githubRunAttempt, targetType, targetId, }) {
+function buildDefaultIdempotencyKey({ repositoryFullName, workflowName, headSha, githubRunId, githubRunAttempt, groupPublicId, }) {
     return [
         repositoryFullName || 'unknown-repo',
         workflowName || 'unknown-workflow',
         headSha || 'unknown-sha',
         githubRunId || 'unknown-run',
         githubRunAttempt || '1',
-        targetType,
-        targetId || 'unknown-target',
+        groupPublicId || 'unknown-group-public-id',
     ].join(':');
 }
 function maybeJson(text) {
@@ -56,36 +55,30 @@ function maybeJson(text) {
         return null;
     }
 }
-function buildExecutionStatusUrl(baseUrl, executionId, executionPublicId) {
+function buildExecutionStatusUrl(baseUrl, executionPublicId) {
     const url = new URL(baseUrl);
-    if (executionId) {
-        url.searchParams.set('execution_id', executionId);
-    }
-    else if (executionPublicId) {
-        url.searchParams.set('execution_public_id', executionPublicId);
-    }
+    url.searchParams.set('execution_public_id', executionPublicId);
     return url.toString();
 }
+function normalizeOutcome(value) {
+    if (value === 'passed' || value === 'failed' || value === 'cancelled') {
+        return value;
+    }
+    return 'pending';
+}
 async function run() {
-    const triggerToken = readInput('trigger-token', true);
+    const apiKey = readInput('api-key', true);
+    const groupPublicId = readInput('group-public-id', true);
     const waitForCompletion = parseBooleanInput(readInput('wait-for-completion'));
     const pollIntervalSeconds = parsePositiveIntegerInput(readInput('poll-interval-seconds'), 20);
     const timeoutSeconds = parsePositiveIntegerInput(readInput('timeout-seconds'), 900);
-    const groupId = readInput('group-id');
-    const scheduleId = readInput('schedule-id');
-    const conclusion = readInput('conclusion');
-    const targetCount = Number(Boolean(groupId)) + Number(Boolean(scheduleId));
-    if (targetCount !== 1) {
-        throw new Error('Exactly one of "group-id" or "schedule-id" must be provided.');
-    }
-    const repositoryFullName = readInput('repository-full-name') || process.env.GITHUB_REPOSITORY || '';
-    const workflowName = readInput('workflow-name') || process.env.GITHUB_WORKFLOW || '';
-    const branch = readInput('branch') || process.env.GITHUB_REF_NAME || '';
-    const headSha = readInput('head-sha') || process.env.GITHUB_SHA || '';
-    const githubRunId = readInput('github-run-id') || process.env.GITHUB_RUN_ID || '';
-    const githubRunAttempt = readInput('github-run-attempt') || process.env.GITHUB_RUN_ATTEMPT || '1';
-    const targetType = groupId ? 'group' : 'schedule';
-    const targetId = groupId || scheduleId;
+    const repositoryFullName = process.env.GITHUB_REPOSITORY || '';
+    const workflowName = process.env.GITHUB_WORKFLOW || '';
+    const branch = process.env.GITHUB_REF_NAME || '';
+    const headSha = process.env.GITHUB_SHA || '';
+    const githubRunId = process.env.GITHUB_RUN_ID || '';
+    const githubRunAttempt = process.env.GITHUB_RUN_ATTEMPT || '1';
+    const conclusion = process.env.GITHUB_JOB_STATUS || undefined;
     const idempotencyKey = readInput('idempotency-key') ||
         buildDefaultIdempotencyKey({
             repositoryFullName,
@@ -93,8 +86,7 @@ async function run() {
             headSha,
             githubRunId,
             githubRunAttempt,
-            targetType,
-            targetId,
+            groupPublicId,
         });
     const parsedRunAttempt = Number.parseInt(githubRunAttempt, 10);
     const body = {
@@ -106,17 +98,16 @@ async function run() {
         github_run_attempt: Number.isNaN(parsedRunAttempt) ? undefined : parsedRunAttempt,
         conclusion: conclusion || undefined,
         target: {
-            group_id: groupId || undefined,
-            schedule_id: scheduleId || undefined,
+            group_public_id: groupPublicId,
         },
     };
     console.log(`Triggering DoableAI API: ${TRIGGER_API_URL}`);
-    console.log(`Target type: ${targetType}`);
+    console.log(`Target group public id: ${groupPublicId}`);
     console.log(`Idempotency key: ${idempotencyKey}`);
     const response = await fetch(TRIGGER_API_URL, {
         method: 'POST',
         headers: {
-            Authorization: `Bearer ${triggerToken}`,
+            Authorization: `Bearer ${apiKey}`,
             'Idempotency-Key': idempotencyKey,
             'Content-Type': 'application/json',
         },
@@ -124,16 +115,9 @@ async function run() {
     });
     const responseBody = await response.text();
     const parsed = maybeJson(responseBody);
-    setOutput('http-status', String(response.status));
-    setOutput('idempotency-key', idempotencyKey);
-    setOutput('response-body', responseBody);
     if (parsed) {
-        if (typeof parsed.status === 'string')
-            setOutput('status', parsed.status);
-        if (typeof parsed.execution_id === 'string')
-            setOutput('execution-id', parsed.execution_id);
-        if (typeof parsed.execution_public_id === 'string') {
-            setOutput('execution-public-id', parsed.execution_public_id);
+        if (typeof parsed.outcome_url === 'string') {
+            setOutput('outcome-link', parsed.outcome_url);
         }
     }
     if (response.status === 200 || response.status === 409) {
@@ -144,20 +128,27 @@ async function run() {
         throw new Error(`Trigger API failed with status ${response.status}: ${responseBody}`);
     }
     if (!waitForCompletion) {
+        setOutput('status', 'accepted');
+        setOutput('outcome', 'pending');
         return;
     }
-    const executionId = parsed && typeof parsed.execution_id === 'string' ? parsed.execution_id : null;
-    const executionPublicId = parsed && typeof parsed.execution_public_id === 'string' ? parsed.execution_public_id : null;
-    if (!executionId && !executionPublicId) {
-        throw new Error('wait-for-completion=true requires execution_id or execution_public_id in trigger response.');
+    const executionPublicId = parsed && typeof parsed.execution_public_id === 'string'
+        ? parsed.execution_public_id
+        : null;
+    if (!executionPublicId) {
+        throw new Error('wait-for-completion=true requires execution_public_id in trigger response.');
+    }
+    const triggerOutcomeUrl = parsed && typeof parsed.outcome_url === 'string' ? parsed.outcome_url : null;
+    if (triggerOutcomeUrl) {
+        setOutput('outcome-link', triggerOutcomeUrl);
     }
     const deadline = Date.now() + timeoutSeconds * 1000;
-    const pollUrl = buildExecutionStatusUrl(EXECUTION_STATUS_API_URL, executionId, executionPublicId);
+    const pollUrl = buildExecutionStatusUrl(EXECUTION_STATUS_API_URL, executionPublicId);
     while (true) {
         const statusResponse = await fetch(pollUrl, {
             method: 'GET',
             headers: {
-                Authorization: `Bearer ${triggerToken}`,
+                Authorization: `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
             },
         });
@@ -169,20 +160,24 @@ async function run() {
         if (!parsedStatusBody || parsedStatusBody.status !== 'ok') {
             throw new Error(`Unexpected execution status payload: ${statusBody}`);
         }
-        const execution = parsedStatusBody.execution;
-        const latestStatus = typeof execution?.status === 'string' ? execution.status : '';
-        const outcome = typeof parsedStatusBody.outcome === 'string' ? parsedStatusBody.outcome : '';
+        const outcomeRaw = typeof parsedStatusBody.outcome === 'string' ? parsedStatusBody.outcome : null;
+        const outcome = normalizeOutcome(outcomeRaw);
         const isTerminal = parsedStatusBody.is_terminal === true;
-        setOutput('final-status', latestStatus);
-        setOutput('final-outcome', outcome);
-        console.log(`Execution polled: status=${latestStatus || 'unknown'}, outcome=${outcome || 'unknown'}, terminal=${isTerminal}`);
+        if (typeof parsedStatusBody.outcome_url === 'string') {
+            setOutput('outcome-link', parsedStatusBody.outcome_url);
+        }
+        console.log(`Execution polled: outcome=${outcome}, terminal=${isTerminal}`);
         if (isTerminal) {
+            setOutput('status', 'completed');
+            setOutput('outcome', outcome);
             if (outcome === 'passed') {
                 return;
             }
-            throw new Error(`DoableAI execution finished with outcome: ${outcome || 'unknown'}`);
+            throw new Error(`DoableAI execution finished with outcome: ${outcome}`);
         }
         if (Date.now() >= deadline) {
+            setOutput('status', 'timeout');
+            setOutput('outcome', 'timeout');
             throw new Error(`Timed out waiting for DoableAI execution result after ${timeoutSeconds}s`);
         }
         await sleep(pollIntervalSeconds * 1000);
