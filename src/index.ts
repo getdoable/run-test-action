@@ -4,8 +4,11 @@ const TRIGGER_API_URL = 'https://api.doableai.com/api/integrations/github/trigge
 const EXECUTION_STATUS_API_URL = 'https://api.doableai.com/api/integrations/github/execution-status';
 
 function readInput(name: string, required = false): string {
-  const envKey = `INPUT_${name.replace(/ /g, '_').replace(/-/g, '_').toUpperCase()}`;
-  const value = process.env[envKey] || '';
+  // GitHub Actions maps action inputs to env vars by replacing spaces only.
+  // Keep both keys to be resilient across runner/tooling differences.
+  const officialEnvKey = `INPUT_${name.replace(/ /g, '_').toUpperCase()}`;
+  const normalizedEnvKey = `INPUT_${name.replace(/ /g, '_').replace(/-/g, '_').toUpperCase()}`;
+  const value = process.env[officialEnvKey] || process.env[normalizedEnvKey] || '';
   const trimmed = value.trim();
   if (required && !trimmed) {
     throw new Error(`Missing required input: ${name}`);
