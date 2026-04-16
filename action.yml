@@ -7,13 +7,16 @@ branding:
   color: 'blue'
 
 inputs:
-  trigger-token:
-    description: 'Bearer token from DoableAI Settings -> API Keys.'
+  api-key:
+    description: 'DoableAI API key from Settings -> API Keys.'
+    required: true
+  group-public-id:
+    description: 'Regression group public id to trigger (for example: tg-xxxx).'
     required: true
   wait-for-completion:
     description: 'Whether to wait for terminal test result.'
     required: false
-    default: 'false'
+    default: 'true'
   poll-interval-seconds:
     description: 'Polling interval when waiting for completion.'
     required: false
@@ -25,51 +28,14 @@ inputs:
   idempotency-key:
     description: 'Optional idempotency key. If omitted, action generates one from GitHub context.'
     required: false
-  group-id:
-    description: 'Regression group UUID to trigger. Exactly one of group-id / schedule-id is required.'
-    required: false
-  schedule-id:
-    description: 'Schedule UUID to trigger. Exactly one of group-id / schedule-id is required.'
-    required: false
-  repository-full-name:
-    description: 'Repository full name (owner/repo).'
-    required: false
-  workflow-name:
-    description: 'Workflow display name.'
-    required: false
-  branch:
-    description: 'Branch name.'
-    required: false
-  head-sha:
-    description: 'Commit SHA.'
-    required: false
-  github-run-id:
-    description: 'GitHub run id.'
-    required: false
-  github-run-attempt:
-    description: 'GitHub run attempt.'
-    required: false
-  conclusion:
-    description: 'Optional CI conclusion metadata.'
-    required: false
 
 outputs:
   status:
-    description: 'API status: created_execution or duplicate.'
-  execution-id:
-    description: 'DoableAI execution UUID.'
-  execution-public-id:
-    description: 'DoableAI execution public id.'
-  http-status:
-    description: 'HTTP status code returned by trigger API.'
-  idempotency-key:
-    description: 'Final idempotency key used by the request.'
-  response-body:
-    description: 'Raw API response body.'
-  final-status:
-    description: 'Terminal execution status when wait-for-completion=true.'
-  final-outcome:
-    description: 'Terminal execution outcome when wait-for-completion=true.'
+    description: 'Action lifecycle status: accepted, completed, or timeout.'
+  outcome:
+    description: 'Execution outcome: pending, passed, failed, cancelled, or timeout.'
+  outcome-link:
+    description: 'DoableAI run report URL for this execution.'
 
 runs:
   using: 'node20'
