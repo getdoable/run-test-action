@@ -28,17 +28,9 @@ jobs:
             exit 1
           fi
 
-      - name: Prepare local action source
-        shell: bash
-        run: |
-          git init
-          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
-          git fetch --depth=1 origin "${GITHUB_SHA}"
-          git checkout --detach "${GITHUB_SHA}"
-
       - name: Trigger DoableAI run via action
         id: trigger
-        uses: ./
+        uses: getdoable/run-test-action@v1
         with:
           api-key: ${{ env.DOABLEAI_API_KEY }}
           group-public-id: ${{ env.DOABLEAI_GROUP_PUBLIC_ID }}
