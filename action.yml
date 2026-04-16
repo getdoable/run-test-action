@@ -24,7 +24,7 @@ inputs:
   timeout-seconds:
     description: 'Max seconds to wait for terminal status.'
     required: false
-    default: '900'
+    default: '1800'
   idempotency-key:
     description: 'Optional idempotency key. If omitted, action generates one from GitHub context.'
     required: false

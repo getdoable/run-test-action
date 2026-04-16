@@ -71,7 +71,7 @@ async function run() {
     const groupPublicId = readInput('group-public-id', true);
     const waitForCompletion = parseBooleanInput(readInput('wait-for-completion'));
     const pollIntervalSeconds = parsePositiveIntegerInput(readInput('poll-interval-seconds'), 20);
-    const timeoutSeconds = parsePositiveIntegerInput(readInput('timeout-seconds'), 900);
+    const timeoutSeconds = parsePositiveIntegerInput(readInput('timeout-seconds'), 1800);
     const repositoryFullName = process.env.GITHUB_REPOSITORY || '';
     const workflowName = process.env.GITHUB_WORKFLOW || '';
     const branch = process.env.GITHUB_REF_NAME || '';
