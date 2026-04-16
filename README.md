@@ -46,7 +46,7 @@ jobs:
 - `idempotency-key`: Optional dedupe key. If omitted, action auto-generates one from GitHub context.
 - `wait-for-completion`: `true/false`, default `true`. When `true`, action polls until terminal result.
 - `poll-interval-seconds`: Poll interval while waiting, default `20`.
-- `timeout-seconds`: Max wait time, default `900`.
+- `timeout-seconds`: Max wait time, default `1800`.
 
 ## Outputs
 
