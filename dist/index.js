@@ -4,8 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const node_fs_1 = __importDefault(require("node:fs"));
-const TRIGGER_API_URL = 'https://qa-staging.getdoable.ai/api/integrations/github/trigger-run';
-const EXECUTION_STATUS_API_URL = 'https://qa-staging.getdoable.ai/api/integrations/github/execution-status';
+const TRIGGER_API_URL = 'https://qa.getdoable.ai/api/integrations/github/trigger-run';
+const EXECUTION_STATUS_API_URL = 'https://qa.getdoable.ai/api/integrations/github/execution-status';
 function readInput(name, required = false) {
     // GitHub Actions maps action inputs to env vars by replacing spaces only.
     // Keep both keys to be resilient across runner/tooling differences.
