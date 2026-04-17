@@ -48,7 +48,6 @@ jobs:
 
           | Field | Value |
           | --- | --- |
-          | Workflow Run | `${GITHUB_RUN_ID}` |
           | Action Status | `${{ steps.trigger.outputs.status }}` |
           | Outcome | `${{ steps.trigger.outputs.outcome }}` |
           | Outcome Link | [Open Result](${{ steps.trigger.outputs.outcome-link }}) |

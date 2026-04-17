@@ -2,21 +2,6 @@
 
 Trigger DoableAI regression runs from GitHub Actions.
 
-## Implementation Notes
-
-- Source: `src/index.ts` (TypeScript)
-- Runtime entry: `dist/index.js` (compiled artifact referenced by `action.yml`)
-
-When publishing updates, run:
-
-```bash
-npm install
-npm run lint
-npm run build
-```
-
-Then commit both source and `dist/` output before tagging.
-
 ## Quick Start
 
 ```yaml
@@ -78,7 +63,7 @@ When final outcome is not `passed`, this step fails to make CI status visible in
 
 ## Smoke Workflow In This Repo
 
-This repository includes `.github/workflows/e2e-smoke.yml` for end-to-end verification in GitHub Actions.
+This repository includes [`./.github/workflows/e2e-smoke.yml`](./.github/workflows/e2e-smoke.yml) for end-to-end verification in GitHub Actions.
 
 Configure GitHub Actions config before running it:
 
