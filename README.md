@@ -5,7 +5,7 @@ Trigger DoableAI regression runs from GitHub Actions.
 ## Quick Start
 
 ```yaml
-name: Trigger DoableAI Regression
+name: Trigger DoableAI Scheduled
 
 on:
   workflow_dispatch:
@@ -27,7 +27,7 @@ jobs:
 ## Inputs
 
 - `api-key` (**required**): DoableAI API key created in DoableAI Settings -> API Keys.
-- `group-public-id` (**required**): Regression group public id (for example: `tg-xxxx`).
+- `group-public-id` (**required**): Scheduled group public id (for example: `tg-xxxx`).
 - `idempotency-key`: Optional dedupe key. If omitted, action auto-generates one from GitHub context.
 - `wait-for-completion`: `true/false`, default `true`. When `true`, action polls until terminal result.
 - `poll-interval-seconds`: Poll interval while waiting, default `20`.

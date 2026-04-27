@@ -11,7 +11,7 @@ inputs:
     description: 'DoableAI API key from Settings -> API Keys.'
     required: true
   group-public-id:
-    description: 'Regression group public id to trigger (for example: tg-xxxx).'
+    description: 'Scheduled group public id to trigger (for example: tg-xxxx).'
     required: true
   wait-for-completion:
     description: 'Whether to wait for terminal test result.'
