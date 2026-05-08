@@ -13,6 +13,10 @@ inputs:
   group-public-id:
     description: 'Scheduled group public id to trigger (for example: tg-xxxx).'
     required: true
+  lookup-latest-only:
+    description: 'When true, only fetch latest run result for group-public-id and do not trigger a new run.'
+    required: false
+    default: 'false'
   wait-for-completion:
     description: 'Whether to wait for terminal test result.'
     required: false
