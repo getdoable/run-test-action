@@ -16,6 +16,8 @@ jobs:
       DOABLEAI_API_KEY: ${{ secrets.DOABLEAI_API_KEY }}
       DOABLEAI_GROUP_PUBLIC_ID: ${{ vars.DOABLEAI_GROUP_PUBLIC_ID }}
     steps:
+      - uses: actions/checkout@v4
+
       - name: Validate required secrets/inputs
         shell: bash
         run: |
@@ -28,14 +30,14 @@ jobs:
             exit 1
           fi
 
-      - name: Trigger DoableAI run via action
+      - name: Lookup latest DoableAI result via action
         id: trigger
-        uses: getdoable/run-test-action@v1
+        uses: ./
         with:
           api-key: ${{ env.DOABLEAI_API_KEY }}
           group-public-id: ${{ env.DOABLEAI_GROUP_PUBLIC_ID }}
-          idempotency-key: ${{ github.repository }}:${{ github.run_id }}:${{ github.run_attempt }}:smoke
-          wait-for-completion: "true"
+          lookup-latest-only: "true"
+          wait-for-completion: "false"
           poll-interval-seconds: "20"
           timeout-seconds: "1800"
 
