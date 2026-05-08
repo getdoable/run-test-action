@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger DoableAI group run
-        uses: getdoable/run-test-action@v1
+        uses: getdoable/run-test-action@v1.1.0
         with:
           api-key: ${{ secrets.DOABLEAI_API_KEY }}
           group-public-id: tg-gqxhqski
@@ -51,7 +51,7 @@ This lets CI safely retry without creating duplicate runs.
 
 ```yaml
 - name: Trigger and wait for DoableAI result
-  uses: getdoable/run-test-action@v1
+  uses: getdoable/run-test-action@v1.1.0
   with:
     api-key: ${{ secrets.DOABLEAI_API_KEY }}
     group-public-id: tg-gqxhqski
@@ -66,7 +66,7 @@ When final outcome is not `passed`, this step fails to make CI status visible in
 
 ```yaml
 - name: Fetch latest DoableAI group result only
-  uses: getdoable/run-test-action@v1
+  uses: getdoable/run-test-action@v1.1.0
   with:
     api-key: ${{ secrets.DOABLEAI_API_KEY }}
     group-public-id: tg-gqxhqski
