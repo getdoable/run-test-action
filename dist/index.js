@@ -78,7 +78,7 @@ function normalizeOutcome(value) {
 async function run() {
     const apiKey = readInput('api-key', true);
     const groupPublicId = readInput('group-public-id', true);
-    const fetchLatestOnly = parseBooleanInput(readInput('fetch-latest-only'));
+    const lookupLatestOnly = parseBooleanInput(readInput('lookup-latest-only'));
     const waitForCompletion = parseBooleanInput(readInput('wait-for-completion'));
     const pollIntervalSeconds = parsePositiveIntegerInput(readInput('poll-interval-seconds'), 20);
     const timeoutSeconds = parsePositiveIntegerInput(readInput('timeout-seconds'), 1800);
@@ -90,7 +90,7 @@ async function run() {
     const githubRunAttempt = process.env.GITHUB_RUN_ATTEMPT || '1';
     const conclusion = process.env.GITHUB_JOB_STATUS || undefined;
     let pollUrl;
-    if (fetchLatestOnly) {
+    if (lookupLatestOnly) {
         console.log(`Fetching latest DoableAI group run result for: ${groupPublicId}`);
         pollUrl = buildLatestGroupExecutionStatusUrl(EXECUTION_STATUS_API_URL, groupPublicId);
     }

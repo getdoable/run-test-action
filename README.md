@@ -28,7 +28,7 @@ jobs:
 
 - `api-key` (**required**): DoableAI API key created in DoableAI Settings -> API Keys.
 - `group-public-id` (**required**): Scheduled group public id (for example: `tg-xxxx`).
-- `fetch-latest-only`: `true/false`, default `false`. When `true`, do not trigger new run; fetch latest run result for `group-public-id`.
+- `lookup-latest-only`: `true/false`, default `false`. When `true`, do not trigger new run; fetch latest run result for `group-public-id`.
 - `idempotency-key`: Optional dedupe key. If omitted, action auto-generates one from GitHub context.
 - `wait-for-completion`: `true/false`, default `true`. When `true`, action polls until terminal result.
 - `poll-interval-seconds`: Poll interval while waiting, default `20`.
@@ -70,7 +70,7 @@ When final outcome is not `passed`, this step fails to make CI status visible in
   with:
     api-key: ${{ secrets.DOABLEAI_API_KEY }}
     group-public-id: tg-gqxhqski
-    fetch-latest-only: true
+    lookup-latest-only: true
     wait-for-completion: false
 ```
 
